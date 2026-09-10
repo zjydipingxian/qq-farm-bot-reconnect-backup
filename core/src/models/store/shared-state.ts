@@ -34,6 +34,12 @@ const DEFAULT_OFFLINE_REMINDER: OfflineReminder = {
     title: '账号下线提醒',
     msg: '账号下线',
     offlineDeleteSec: 0,
+    autoReconnectEnabled: false,
+    reconnectAccountId: '',
+    reconnectDelaySec: 60,
+    reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
+    reconnectApiToken: '',
+    reconnectOpenid: '',
 };
 
 const DEFAULT_LOGIN_SETTINGS: LoginSettings = {

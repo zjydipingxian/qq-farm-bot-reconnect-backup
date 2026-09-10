@@ -56,6 +56,13 @@ function normalizeOfflineReminder(input: unknown): OfflineReminder {
         title,
         msg,
         offlineDeleteSec,
+        autoReconnectEnabled: src.autoReconnectEnabled === true,
+        reconnectAccountId: String(src.reconnectAccountId || '').trim(),
+        reconnectDelaySec: Number.isFinite(Number(src.reconnectDelaySec))
+            ? Math.max(1, Math.min(86400, Math.floor(Number(src.reconnectDelaySec)))) : 60,
+        reconnectCodeEndpoint: String(src.reconnectCodeEndpoint ?? DEFAULT_OFFLINE_REMINDER.reconnectCodeEndpoint).trim(),
+        reconnectApiToken: String(src.reconnectApiToken || '').trim(),
+        reconnectOpenid: String(src.reconnectOpenid || '').trim(),
     };
 }
 
@@ -139,7 +146,15 @@ function setLoginSettings(cfg: Partial<LoginSettings> | undefined): LoginSetting
 
 function setOfflineReminder(cfg: Partial<OfflineReminder> | undefined): OfflineReminder {
     const current = normalizeOfflineReminder(globalConfig.offlineReminder);
-    globalConfig.offlineReminder = normalizeOfflineReminder({ ...current, ...(cfg || {}) });
+    const next = normalizeOfflineReminder({ ...current, ...(cfg || {}) });
+    if (next.autoReconnectEnabled) {
+        require('../../runtime/auto-reconnect').validateReconnectConfig(next);
+        const { getAccounts } = require('./accounts');
+        if (!getAccounts().accounts.some((a: any) => String(a.id) === next.reconnectAccountId)) {
+            throw new Error('请选择一个已存在的重连账号');
+        }
+    }
+    globalConfig.offlineReminder = next;
     saveGlobalConfig();
     return getOfflineReminder();
 }

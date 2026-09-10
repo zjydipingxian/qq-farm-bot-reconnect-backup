@@ -20,6 +20,7 @@ interface DataProviderOptions {
     startWorker: (account: any) => boolean;
     stopWorker: (accountId: string) => void;
     restartWorker: (account: any) => void;
+    isAccountStarting?: (accountId: string) => boolean;
 }
 
 function createDataProvider(options: DataProviderOptions) {
@@ -379,7 +380,7 @@ function createDataProvider(options: DataProviderOptions) {
             const data = getAccounts();
             data.accounts.forEach((a: any) => {
                 const worker = workers[a.id];
-                a.running = !!worker;
+                a.running = !!worker || !!options.isAccountStarting?.(String(a.id));
                 if (worker && worker.status && worker.status.status && worker.status.status.name) {
                     a.nick = worker.status.status.name;
                 }
@@ -416,7 +417,7 @@ function createDataProvider(options: DataProviderOptions) {
 
         isAccountRunning: (accountRef: string) => {
             const accountId = resolveAccountRefId(accountRef);
-            return !!(accountId && workers[accountId]);
+            return !!(accountId && (workers[accountId] || options.isAccountStarting?.(accountId)));
         },
 
         getSchedulerStatus: async (accountRef: string) => {

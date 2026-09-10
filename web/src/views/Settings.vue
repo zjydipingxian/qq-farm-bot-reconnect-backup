@@ -10,6 +10,7 @@ import AccountModal from '@/components/AccountModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import AutomationSettingsForm from '@/components/settings/AutomationSettingsForm.vue'
 import BagSeedPriorityItem from '@/components/settings/BagSeedPriorityItem.vue'
+import ReconnectSettingsForm from '@/components/settings/ReconnectSettingsForm.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -1038,6 +1039,12 @@ const passwordForm = ref({
 })
 
 const localOffline = ref({
+  autoReconnectEnabled: false,
+  reconnectAccountId: '',
+  reconnectDelaySec: 60,
+  reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
+  reconnectApiToken: '',
+  reconnectOpenid: '',
   channel: 'webhook',
   endpoint: '',
   token: '',
@@ -1118,6 +1125,12 @@ function syncLocalOfflineSettings() {
   if (settings.value?.offlineReminder) {
     const saved = JSON.parse(JSON.stringify(settings.value.offlineReminder))
     const next = {
+      autoReconnectEnabled: false,
+      reconnectAccountId: '',
+      reconnectDelaySec: 60,
+      reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
+      reconnectApiToken: '',
+      reconnectOpenid: '',
       channel: 'webhook',
       endpoint: '',
       token: '',
@@ -1217,7 +1230,7 @@ async function handleSaveOffline() {
     const res = await settingStore.saveOfflineConfig(localOffline.value)
 
     if (res.ok) {
-      showAlert('下线提醒设置已保存', 'primary')
+      showAlert('下线提醒与重连设置已保存', 'primary')
     }
     else {
       showAlert(`保存失败: ${res.error || '未知错误'}`, 'danger')
@@ -2162,7 +2175,7 @@ async function handleResetSystemConfig() {
                       下线提醒
                     </h4>
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      配置账号离线后的通知与清理
+                      配置账号离线后的通知、重连与清理
                     </p>
                   </div>
                 </div>
@@ -2236,6 +2249,8 @@ async function handleResetSystemConfig() {
                   />
                 </div>
 
+                <ReconnectSettingsForm v-model="localOffline" :accounts="accountStore.accounts" />
+
                 <div class="mt-3 flex justify-end gap-2 border-t pt-3 dark:border-gray-700">
                   <BaseButton
                     variant="secondary"
@@ -2253,7 +2268,7 @@ async function handleResetSystemConfig() {
                     :disabled="offlineTesting"
                     @click="handleSaveOffline"
                   >
-                    保存下线提醒设置
+                    保存提醒与重连设置
                   </BaseButton>
                 </div>
               </section>

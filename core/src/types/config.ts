@@ -103,6 +103,12 @@ export interface OfflineReminder {
   title: string;
   msg: string;
   offlineDeleteSec: number;
+  autoReconnectEnabled: boolean;
+  reconnectAccountId: string;
+  reconnectDelaySec: number;
+  reconnectCodeEndpoint: string;
+  reconnectApiToken: string;
+  reconnectOpenid: string;
 }
 
 export interface UIConfig {

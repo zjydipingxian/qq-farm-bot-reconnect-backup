@@ -358,7 +358,7 @@ function createWorkerManager(options: WorkerManagerOptions) {
                 );
             }
         } else if (msg.type === 'account_kicked') {
-            if (worker.terminalHandled) return;
+            if (worker.terminalHandled || worker.stopping) return;
             worker.terminalHandled = true;
             const reason = msg.reason || '未知';
             log('系统', `账号 ${worker.name} 被踢下线，已自动停止账号`, { accountId: String(accountId), accountName: worker.name });
@@ -371,7 +371,7 @@ function createWorkerManager(options: WorkerManagerOptions) {
             addAccountLog('kickout_stop', `账号 ${worker.name} 被踢下线，已自动停止`, accountId, worker.name, { reason });
             stopWorker(accountId);
         } else if (msg.type === 'account_disconnected') {
-            if (worker.terminalHandled) return;
+            if (worker.terminalHandled || worker.stopping) return;
             worker.terminalHandled = true;
             const source = String(msg.source || 'ws_close');
             const code = Number(msg.code) || 0;
@@ -385,7 +385,7 @@ function createWorkerManager(options: WorkerManagerOptions) {
                 }
                 worker.requests.clear();
             }
-            log('系统', `账号 ${worker.name} 连接已断开，已停止运行并等待 Helper 刷新 Code 或重新扫码`, {
+            log('系统', `账号 ${worker.name} 连接已断开，将按重连设置处理，也可通过 Helper 或扫码刷新 Code`, {
                 accountId: String(accountId),
                 accountName: worker.name,
                 source,
@@ -400,7 +400,7 @@ function createWorkerManager(options: WorkerManagerOptions) {
             });
             addAccountLog(
                 'disconnect_stop',
-                `账号 ${worker.name} 连接已断开，已停止运行并等待 Helper 刷新 Code 或重新扫码`,
+                `账号 ${worker.name} 连接已断开，将按重连设置处理，也可通过 Helper 或扫码刷新 Code`,
                 accountId,
                 worker.name,
                 { source, code, reason, phase, connectionId: Number(msg.connectionId) || 0 },

@@ -3,12 +3,13 @@ const { fork } = require('node:child_process');
 const path = require('node:path');
 const { Worker } = require('node:worker_threads');
 const store = require('../models/store');
-const { updateRuntimeConfig, getRuntimeConfig, getDefaultSystemConfig } = require('../config/config');
+const { updateRuntimeConfig } = require('../config/config');
 const { sendPushooMessage } = require('../services/push');
 const { createDataProvider } = require('./data-provider');
 const { createReloginReminderService } = require('./relogin-reminder');
 const { createRuntimeState } = require('./runtime-state');
 const { createWorkerManager } = require('./worker-manager');
+const { createAutoReconnectService } = require('./auto-reconnect');
 
 const OPERATION_KEYS = ['harvest', 'farming', 'fertilize', 'plant', 'steal', 'helpFarming', 'taskClaim', 'sell', 'upgrade'];
 
@@ -65,8 +66,9 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
         triggerOfflineReminder,
         sendConfiguredPush,
     } = reloginReminder;
+    let autoReconnect: any;
 
-    const { startWorker, stopWorker, restartWorker, callWorkerApi } = createWorkerManager({
+    const workerManager = createWorkerManager({
         fork,
         WorkerThread: Worker,
         runtimeMode,
@@ -80,11 +82,15 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
         normalizeStatusForPanel,
         buildConfigSnapshotForAccount,
         getOfflineAutoDeleteMs,
-        triggerOfflineReminder,
+        triggerOfflineReminder: (payload: any) => {
+            if (payload.reason !== 'offline_timeout') autoReconnect.schedule(String(payload.accountId));
+            void triggerOfflineReminder(payload);
+        },
         sendConfiguredPush,
         addOrUpdateAccount: store.addOrUpdateAccount,
         deleteAccount: store.deleteAccount,
         onStatusSync: (accountId: string, status: any, accountName?: string) => {
+            if (status?.connection?.connected) autoReconnect.markConnected(accountId);
             runtimeEvents.emit('status', { accountId, status, accountName });
             if (onStatusSync) onStatusSync(accountId, status, accountName);
         },
@@ -93,6 +99,32 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
             if (onLog) onLog(entry, accountId, accountName);
         },
     });
+    const { callWorkerApi } = workerManager;
+    autoReconnect = createAutoReconnectService({
+        store,
+        startWorker: workerManager.startWorker,
+        hasWorker: (id: string) => !!workers[id],
+        log,
+    });
+    function startWorker(account: any): boolean {
+        if (!account?.id || workers[account.id]) return false;
+        if (autoReconnect.isEnabled(String(account.id))) return autoReconnect.schedule(String(account.id), true);
+        return workerManager.startWorker(account);
+    }
+    function stopWorker(accountId: string): void {
+        autoReconnect.cancel(String(accountId));
+        workerManager.stopWorker(accountId);
+    }
+    function restartWorker(account: any): void {
+        if (!account?.id) return;
+        autoReconnect.cancel(String(account.id));
+        if (autoReconnect.isEnabled(String(account.id))) {
+            workerManager.stopWorker(account.id);
+            autoReconnect.schedule(String(account.id), true);
+        } else {
+            workerManager.restartWorker(account);
+        }
+    }
     const dataProvider = createDataProvider({
         workers,
         globalLogs: GLOBAL_LOGS,
@@ -111,6 +143,7 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
         startWorker,
         stopWorker,
         restartWorker,
+        isAccountStarting: autoReconnect.hasPending,
     });
 
     runtimeEvents.on('log', (entry: any) => {
@@ -173,6 +206,7 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
     }
 
     function stopAllAccounts(): void {
+        autoReconnect.cancelAll();
         for (const accountId of Object.keys(workers)) {
             stopWorker(accountId);
         }

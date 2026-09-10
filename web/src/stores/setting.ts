@@ -61,6 +61,12 @@ export interface OfflineConfig {
   title: string
   msg: string
   offlineDeleteSec: number
+  autoReconnectEnabled: boolean
+  reconnectAccountId: string
+  reconnectDelaySec: number
+  reconnectCodeEndpoint: string
+  reconnectApiToken: string
+  reconnectOpenid: string
 }
 
 export interface UIConfig {
@@ -161,6 +167,12 @@ function createDefaultSettings(): SettingsState {
       title: '账号下线提醒',
       msg: '账号下线',
       offlineDeleteSec: 0,
+      autoReconnectEnabled: false,
+      reconnectAccountId: '',
+      reconnectDelaySec: 60,
+      reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
+      reconnectApiToken: '',
+      reconnectOpenid: '',
     },
     stealDelaySeconds: 0,
     plantOrderRandom: false,
