@@ -290,6 +290,7 @@ function createDataProvider(options: DataProviderOptions) {
                 'fertilizerBuyNormalThresholdHours',
                 'fertilizerBuyCheckIntervalMinutes',
                 'bagSeedPriority',
+                'bagSeedMultiLandReservationEnabled',
                 'bagSeedLandTypes',
                 'bagSeedFallbackStrategy',
                 'autoAcceptFriendMinLevel',
