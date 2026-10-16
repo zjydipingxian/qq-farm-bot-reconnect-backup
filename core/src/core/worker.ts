@@ -791,6 +791,15 @@ async function handleApiCall(msg: any): Promise<void> {
             case 'getIllustratedSnapshot':
                 result = await require('../services/illustrated').getIllustratedSnapshot();
                 break;
+            case 'claimIllustratedRewards':
+                result = await require('../services/illustrated').claimIllustratedRewards(args[0]);
+                break;
+            case 'getSolarCalendar':
+                result = await require('../services/solar-calendar').getSolarCalendar();
+                break;
+            case 'operateSolarCalendar':
+                result = await require('../services/solar-calendar').operateSolarCalendar(args[0], args[1]);
+                break;
             case 'getFriends':
                 result = await getFriendsList(args[0] === true, 'normal', args[1] === true);
                 break;
@@ -903,6 +912,9 @@ async function handleApiCall(msg: any): Promise<void> {
                 break;
             case 'fertilizeOwnLand':
                 result = await fertilizeOwnLand(args[0], args[1]);
+                break;
+            case 'fertilizeAllOwnLands':
+                result = await require('../services/farm').fertilizeAllOwnLands(args[0]);
                 break;
             case 'buyFertilizer': {
                 const fertilizerType = args[0] || 'organic';
@@ -1045,6 +1057,18 @@ async function handleApiCall(msg: any): Promise<void> {
                 break;
             case 'getAutumnActivity':
                 result = await require('../services/autumn-activities').getAutumnActivity(args[0]);
+                break;
+            case 'getMilkTeaActivity':
+                result = await require('../services/milk-tea').getMilkTeaActivity(args[0], args[1]);
+                break;
+            case 'operateMilkTeaActivity':
+                result = await require('../services/milk-tea').operateMilkTeaActivity(args[0], args[1]);
+                break;
+            case 'getShareRewardActivity':
+                result = await require('../services/share-reward-activity').getShareRewardActivity(args[0]);
+                break;
+            case 'operateShareRewardActivity':
+                result = await require('../services/share-reward-activity').operateShareRewardActivity(args[0], args[1], args[2]);
                 break;
             case 'operateAutumnActivity':
                 result = await require('../services/autumn-activities').operateAutumnActivity(args[0], args[1], args[2]);

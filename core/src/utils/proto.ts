@@ -18,6 +18,8 @@ async function loadProto(): Promise<void> {
     await root.load([
         getResourcePath('proto', 'game.proto'),
         getResourcePath('proto', 'userpb.proto'),
+        getResourcePath('proto', 'player-login.proto'),
+        getResourcePath('proto', 'globalscenepb.proto'),
         getResourcePath('proto', 'plantpb.proto'),
         getResourcePath('proto', 'corepb.proto'),
         getResourcePath('proto', 'shoppb.proto'),
@@ -61,6 +63,14 @@ async function loadProto(): Promise<void> {
     types.EventMessage = root.lookupType('gatepb.EventMessage');
 
     types.AutumnOperateRequest = root.lookupType('gamepb.activitypb.AutumnOperateRequest');
+
+    types.MilkTeaOperateReply = root.lookupType('gamepb.activitypb.MilkTeaOperateReply');
+    types.MilkTeaGetGroupReply = root.lookupType('gamepb.activitypb.MilkTeaGetGroupReply');
+    types.MilkTeaOperateRequest = root.lookupType('gamepb.activitypb.MilkTeaOperateRequest');
+    types.PlayerLoginRequest = root.lookupType('gamepb.userpb.PlayerLoginRequest');
+    types.PlayerLoginReply = root.lookupType('gamepb.userpb.PlayerLoginReply');
+    types.PlayerSceneLoginRequest = root.lookupType('gamepb.globalscenepb.PlayerSceneLoginRequest');
+    types.PlayerSceneLoginReply = root.lookupType('gamepb.globalscenepb.PlayerSceneLoginReply');
 
     // 用户
     types.LoginRequest = root.lookupType('gamepb.userpb.LoginRequest');
@@ -271,6 +281,9 @@ async function loadProto(): Promise<void> {
     types.ClaimBattlePassRewardsReply = root.lookupType('gamepb.seasonpb.ClaimBattlePassRewardsReply');
     types.BattlePassChangeNotify = root.lookupType('gamepb.seasonpb.BattlePassChangeNotify');
     types.GetSolarTermsRequest = root.lookupType('gamepb.solartermspb.GetSolarTermsRequest');
+    for (const name of ['GetSolarTermsV2', 'ClaimSolarTermsV2', 'AnswerSolarTerms', 'ClaimSolarSeason']) {
+        for (const suffix of ['Request', 'Reply']) types[name + suffix] = root.lookupType(`gamepb.solartermspb.${name}${suffix}`);
+    }
     types.GetSolarTermsReply = root.lookupType('gamepb.solartermspb.GetSolarTermsReply');
     types.GetSolarTermsRedDotRequest = root.lookupType('gamepb.solartermspb.GetSolarTermsRedDotRequest');
     types.GetSolarTermsRedDotReply = root.lookupType('gamepb.solartermspb.GetSolarTermsRedDotReply');
