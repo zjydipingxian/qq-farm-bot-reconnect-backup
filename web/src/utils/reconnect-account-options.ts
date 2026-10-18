@@ -1,4 +1,5 @@
 import type { Account } from '@/stores/account'
+import type { OfflineConfig } from '@/stores/setting'
 
 export interface ReconnectAccountOption {
   label: string
@@ -23,4 +24,27 @@ export function buildReconnectAccountOptions(accounts: Pick<Account, 'id' | 'nam
       value: id,
     }
   })
+}
+
+export function getReconnectOpenid(config: Pick<OfflineConfig, 'reconnectAccountId' | 'reconnectOpenid' | 'reconnectOpenids'>, accountId: string): string {
+  const id = String(accountId || '')
+  if (Object.prototype.hasOwnProperty.call(config.reconnectOpenids || {}, id))
+    return String(config.reconnectOpenids[id] || '')
+  return config.reconnectAccountId === id ? String(config.reconnectOpenid || '') : ''
+}
+
+export function setReconnectOpenid(config: OfflineConfig, accountId: string, openid: string): OfflineConfig {
+  const id = String(accountId || '')
+  if (!id)
+    return config
+  const value = String(openid || '')
+  return {
+    ...config,
+    reconnectAccountId: id,
+    reconnectOpenid: value,
+    reconnectOpenids: {
+      ...(config.reconnectOpenids || {}),
+      [id]: value,
+    },
+  }
 }

@@ -1065,6 +1065,7 @@ const passwordForm = ref({
 const localOffline = ref({
   autoReconnectEnabled: false,
   reconnectAccountId: '',
+  reconnectOpenids: {} as Record<string, string>,
   reconnectDelaySec: 60,
   reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
   reconnectApiToken: '',
@@ -1151,6 +1152,7 @@ function syncLocalOfflineSettings() {
     const next = {
       autoReconnectEnabled: false,
       reconnectAccountId: '',
+      reconnectOpenids: {} as Record<string, string>,
       reconnectDelaySec: 60,
       reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
       reconnectApiToken: '',

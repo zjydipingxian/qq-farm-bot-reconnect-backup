@@ -56,13 +56,20 @@ function createAutoReconnectService(options: ReconnectOptions) {
     const runs = new Map<string, { timer?: ReturnType<typeof setTimeout>; controller: AbortController }>();
     const attempts = new Map<string, number>();
     const getAccount = (id: string) => store.getAccounts().accounts.find((a: any) => String(a.id) === id);
+    const resolveAccountConfig = (cfg: OfflineReminder, id: string): OfflineReminder => ({
+        ...cfg,
+        reconnectAccountId: id,
+        reconnectOpenid: String(cfg.reconnectOpenids?.[id]
+            || (cfg.reconnectAccountId === id ? cfg.reconnectOpenid : '')
+            || '').trim(),
+    });
     const configKey = (cfg: OfflineReminder) => JSON.stringify([
         cfg.autoReconnectEnabled, cfg.reconnectAccountId, cfg.reconnectOpenid,
         cfg.reconnectCodeEndpoint, cfg.reconnectApiToken, cfg.reconnectDelaySec,
     ]);
     const isEnabled = (id: string) => {
-        const cfg = store.getOfflineReminder();
-        return cfg.autoReconnectEnabled === true && cfg.reconnectAccountId === String(id);
+        const cfg = resolveAccountConfig(store.getOfflineReminder(), String(id));
+        return cfg.autoReconnectEnabled === true && !!cfg.reconnectOpenid;
     };
 
     function cancel(id: string): void {
@@ -84,14 +91,14 @@ function createAutoReconnectService(options: ReconnectOptions) {
             log('错误', '自动重连连续失败 3 次，已停止，请检查配置后手动启动', { accountId: id });
             return false;
         }
-        const cfg: OfflineReminder = store.getOfflineReminder();
+        const cfg: OfflineReminder = resolveAccountConfig(store.getOfflineReminder(), id);
         const account = getAccount(id);
         let expectedCode = account.code;
         const run = { controller: new AbortController(), timer: undefined as ReturnType<typeof setTimeout> | undefined };
         runs.set(id, run);
         const current = () => runs.get(id) === run && getAccount(id)?.code === expectedCode
             && getAccount(id)?.createdAt === account.createdAt
-            && configKey(store.getOfflineReminder()) === configKey(cfg);
+            && configKey(resolveAccountConfig(store.getOfflineReminder(), id)) === configKey(cfg);
         const delay = Math.max(1000, cfg.reconnectDelaySec * 1000);
         const execute = async () => {
             if (!current()) { if (runs.get(id) === run) cancel(id); return; }

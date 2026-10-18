@@ -74,6 +74,49 @@ test('startup fetches once, binds the correct account and preserves profile/plat
     assert.equal(f.accounts()[0].code, 'fresh-code');
 });
 
+test('multiple farm accounts use their independently bound OpenIDs', async (t) => {
+    let cfg = {
+        ...config(),
+        reconnectOpenids: {
+            1: 'openid-one',
+            2: 'openid-two',
+        },
+    };
+    let accounts = [
+        { id: '1', name: '农场一', code: 'old-one', platform: 'wx', createdAt: 1 },
+        { id: '2', name: '农场二', code: 'old-two', platform: 'wx', createdAt: 2 },
+    ];
+    const requestedOpenids = [];
+    const starts = [];
+    const service = createAutoReconnectService({
+        store: {
+            getOfflineReminder: () => cfg,
+            getAccounts: () => ({ accounts }),
+            addOrUpdateAccount: update => {
+                accounts = accounts.map(account => account.id === update.id ? { ...account, ...update } : account);
+                return { accounts };
+            },
+        },
+        startWorker: account => { starts.push(account); return true; },
+        hasWorker: () => false,
+        requestCode: async reconnectConfig => {
+            requestedOpenids.push(reconnectConfig.reconnectOpenid);
+            return `code-${reconnectConfig.reconnectOpenid}`;
+        },
+        log: () => {},
+    });
+    t.after(() => service.cancelAll());
+
+    assert.equal(service.schedule('1', true), true);
+    assert.equal(service.schedule('2', true), true);
+    await delay(30);
+
+    assert.deepEqual(requestedOpenids.sort(), ['openid-one', 'openid-two']);
+    assert.deepEqual(starts.map(account => account.id).sort(), ['1', '2']);
+    assert.equal(accounts[0].code, 'code-openid-one');
+    assert.equal(accounts[1].code, 'code-openid-two');
+});
+
 test('manual stop cancels delayed and in-flight reconnects', async (t) => {
     let resolve;
     const f = fixture(t, () => new Promise(r => { resolve = r; }));

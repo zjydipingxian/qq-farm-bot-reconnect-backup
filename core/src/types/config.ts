@@ -107,6 +107,7 @@ export interface OfflineReminder {
   offlineDeleteSec: number;
   autoReconnectEnabled: boolean;
   reconnectAccountId: string;
+  reconnectOpenids: Record<string, string>;
   reconnectDelaySec: number;
   reconnectCodeEndpoint: string;
   reconnectApiToken: string;

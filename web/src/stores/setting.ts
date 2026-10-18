@@ -63,6 +63,7 @@ export interface OfflineConfig {
   offlineDeleteSec: number
   autoReconnectEnabled: boolean
   reconnectAccountId: string
+  reconnectOpenids: Record<string, string>
   reconnectDelaySec: number
   reconnectCodeEndpoint: string
   reconnectApiToken: string
@@ -173,6 +174,7 @@ function createDefaultSettings(): SettingsState {
       offlineDeleteSec: 0,
       autoReconnectEnabled: false,
       reconnectAccountId: '',
+      reconnectOpenids: {},
       reconnectDelaySec: 60,
       reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
       reconnectApiToken: '',

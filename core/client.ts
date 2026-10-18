@@ -52,8 +52,11 @@ if (isWorkerProcess) {
     }).then(() => {
         const cfg = runtimeEngine.store.getOfflineReminder();
         if (cfg.autoReconnectEnabled) {
-            const account = runtimeEngine.store.getAccounts().accounts.find((a: any) => String(a.id) === cfg.reconnectAccountId);
-            if (account) runtimeEngine.startWorker(account);
+            for (const account of runtimeEngine.store.getAccounts().accounts) {
+                if (String(cfg.reconnectOpenids?.[String(account.id)] || '').trim()) {
+                    runtimeEngine.startWorker(account);
+                }
+            }
         }
     }).catch((err: any) => {
         mainLogger.error('runtime bootstrap failed', { error: err && err.message ? err.message : String(err) });

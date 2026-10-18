@@ -5,11 +5,29 @@ import { computed } from 'vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSwitch from '@/components/ui/BaseSwitch.vue'
-import { buildReconnectAccountOptions } from '@/utils/reconnect-account-options'
+import { buildReconnectAccountOptions, getReconnectOpenid, setReconnectOpenid } from '@/utils/reconnect-account-options'
 
 const props = defineProps<{ accounts: Account[] }>()
 const model = defineModel<OfflineConfig>({ required: true })
 const accountOptions = computed(() => buildReconnectAccountOptions(props.accounts))
+const selectedAccountId = computed({
+  get: () => String(model.value.reconnectAccountId || ''),
+  set: (value: string) => {
+    const accountId = String(value || '')
+    model.value = {
+      ...model.value,
+      reconnectAccountId: accountId,
+      reconnectOpenid: getReconnectOpenid(model.value, accountId),
+    }
+  },
+})
+const selectedOpenid = computed({
+  get: () => getReconnectOpenid(model.value, selectedAccountId.value),
+  set: (value: string) => {
+    model.value = setReconnectOpenid(model.value, selectedAccountId.value, value)
+  },
+})
+const configuredAccountCount = computed(() => Object.values(model.value.reconnectOpenids || {}).filter(openid => !!String(openid).trim()).length)
 function update<K extends keyof OfflineConfig>(key: K, value: OfflineConfig[K]) {
   model.value = { ...model.value, [key]: value }
 }
@@ -19,14 +37,14 @@ function update<K extends keyof OfflineConfig>(key: K, value: OfflineConfig[K]) 
   <div class="reconnect-settings">
     <BaseSwitch :model-value="model.autoReconnectEnabled" label="启动取码与掉线自动重连" @update:model-value="update('autoReconnectEnabled', !!$event)" />
     <div class="reconnect-fields">
-      <BaseSelect :model-value="model.reconnectAccountId" :options="accountOptions" label="绑定农场账号" @update:model-value="update('reconnectAccountId', String($event))" />
-      <BaseInput :model-value="model.reconnectOpenid" label="OpenID" placeholder="填写此农场账号对应的 OpenID" @update:model-value="update('reconnectOpenid', String($event))" />
+      <BaseSelect v-model="selectedAccountId" :options="accountOptions" label="绑定农场账号" />
+      <BaseInput v-model="selectedOpenid" label="OpenID" placeholder="填写此农场账号对应的 OpenID" />
       <BaseInput :model-value="model.reconnectCodeEndpoint" label="获取 Code 接口" @update:model-value="update('reconnectCodeEndpoint', String($event))" />
       <BaseInput :model-value="model.reconnectApiToken" type="password" label="API Token" placeholder="仅填 Token，不含 Bearer 前缀" autocomplete="new-password" @update:model-value="update('reconnectApiToken', String($event))" />
       <BaseInput :model-value="model.reconnectDelaySec" type="number" min="1" max="86400" label="重连等待时间（秒）" @update:model-value="update('reconnectDelaySec', Number($event))" />
     </div>
     <p class="reconnect-hint">
-      保存后，程序启动时会自动启动绑定账号；手动启动和掉线重连也会获取新 Code。连续失败最多尝试 3 次；手动停止会取消本次重连。请确认 OpenID 与所选账号一致。AppID 无需填写。
+      已为 {{ configuredAccountCount }} 个账号配置 OpenID。切换“绑定农场账号”可分别填写；保存后这些账号会独立取码和重连。连续失败最多尝试 3 次；手动停止会取消本次重连。AppID 无需填写。
     </p>
     <p v-if="model.reconnectCodeEndpoint.startsWith('http:')" class="reconnect-hint">
       当前接口使用 HTTP，API Token 将明文传输；服务支持 HTTPS 时建议更换为 HTTPS 地址。

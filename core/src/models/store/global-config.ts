@@ -48,6 +48,19 @@ function normalizeOfflineReminder(input: unknown): OfflineReminder {
     const msg = (src.msg !== undefined && src.msg !== null)
         ? String(src.msg).trim()
         : DEFAULT_OFFLINE_REMINDER.msg;
+    const reconnectAccountId = String(src.reconnectAccountId || '').trim();
+    const reconnectOpenid = String(src.reconnectOpenid || '').trim();
+    const reconnectOpenids: Record<string, string> = {};
+    const hasReconnectOpenids = Object.hasOwn(src, 'reconnectOpenids');
+    if (hasReconnectOpenids && src.reconnectOpenids && typeof src.reconnectOpenids === 'object' && !Array.isArray(src.reconnectOpenids)) {
+        for (const [accountId, openid] of Object.entries(src.reconnectOpenids)) {
+            const id = String(accountId || '').trim();
+            if (id) reconnectOpenids[id] = String(openid || '').trim();
+        }
+    } else if (reconnectAccountId && reconnectOpenid) {
+        // Migrate the legacy single-account binding without changing the stored account id.
+        reconnectOpenids[reconnectAccountId] = reconnectOpenid;
+    }
     return {
         channel,
         endpoint,
@@ -57,12 +70,13 @@ function normalizeOfflineReminder(input: unknown): OfflineReminder {
         msg,
         offlineDeleteSec,
         autoReconnectEnabled: src.autoReconnectEnabled === true,
-        reconnectAccountId: String(src.reconnectAccountId || '').trim(),
+        reconnectAccountId,
+        reconnectOpenids,
         reconnectDelaySec: Number.isFinite(Number(src.reconnectDelaySec))
             ? Math.max(1, Math.min(86400, Math.floor(Number(src.reconnectDelaySec)))) : 60,
         reconnectCodeEndpoint: String(src.reconnectCodeEndpoint ?? DEFAULT_OFFLINE_REMINDER.reconnectCodeEndpoint).trim(),
         reconnectApiToken: String(src.reconnectApiToken || '').trim(),
-        reconnectOpenid: String(src.reconnectOpenid || '').trim(),
+        reconnectOpenid: reconnectOpenids[reconnectAccountId] || (hasReconnectOpenids ? '' : reconnectOpenid),
     };
 }
 
@@ -148,10 +162,17 @@ function setOfflineReminder(cfg: Partial<OfflineReminder> | undefined): OfflineR
     const current = normalizeOfflineReminder(globalConfig.offlineReminder);
     const next = normalizeOfflineReminder({ ...current, ...(cfg || {}) });
     if (next.autoReconnectEnabled) {
-        require('../../runtime/auto-reconnect').validateReconnectConfig(next);
+        const bindings = Object.entries(next.reconnectOpenids).filter(([, openid]) => !!String(openid || '').trim());
+        if (!bindings.length) throw new Error('请至少为一个农场账号填写 OpenID');
         const { getAccounts } = require('./accounts');
-        if (!getAccounts().accounts.some((a: any) => String(a.id) === next.reconnectAccountId)) {
-            throw new Error('请选择一个已存在的重连账号');
+        const accountIds = new Set(getAccounts().accounts.map((account: any) => String(account.id)));
+        for (const [accountId, openid] of bindings) {
+            if (!accountIds.has(accountId)) throw new Error(`重连账号 ${accountId} 不存在`);
+            require('../../runtime/auto-reconnect').validateReconnectConfig({
+                ...next,
+                reconnectAccountId: accountId,
+                reconnectOpenid: String(openid),
+            });
         }
     }
     globalConfig.offlineReminder = next;

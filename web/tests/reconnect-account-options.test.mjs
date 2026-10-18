@@ -15,11 +15,11 @@ function loadOptionsBuilder() {
   const module = { exports: {} }
   // eslint-disable-next-line no-new-func
   new Function('require', 'module', 'exports', outputText)(require, module, module.exports)
-  return module.exports.buildReconnectAccountOptions
+  return module.exports
 }
 
 test('binding options distinguish accounts that share the same farm nickname', () => {
-  const buildReconnectAccountOptions = loadOptionsBuilder()
+  const { buildReconnectAccountOptions } = loadOptionsBuilder()
   const options = buildReconnectAccountOptions([
     { id: 'wx-account-10001', name: '开心农场', platform: 'wx' },
     { id: 'qq-account-20002', name: '开心农场', platform: 'qq', uin: 12345678 },
@@ -29,4 +29,23 @@ test('binding options distinguish accounts that share the same farm nickname', (
   assert.notEqual(options[0].label, options[1].label)
   assert.match(options[0].label, /开心农场.*微信.*wx-account-10001/)
   assert.match(options[1].label, /开心农场.*QQ.*12345678/)
+})
+
+test('each bound farm account keeps its own OpenID', () => {
+  const { getReconnectOpenid, setReconnectOpenid } = loadOptionsBuilder()
+  const initial = {
+    reconnectAccountId: 'account-one',
+    reconnectOpenid: '',
+    reconnectOpenids: {},
+  }
+
+  const withFirst = setReconnectOpenid(initial, 'account-one', 'openid-one')
+  const withBoth = setReconnectOpenid(withFirst, 'account-two', 'openid-two')
+
+  assert.equal(getReconnectOpenid(withBoth, 'account-one'), 'openid-one')
+  assert.equal(getReconnectOpenid(withBoth, 'account-two'), 'openid-two')
+  assert.deepEqual(withBoth.reconnectOpenids, {
+    'account-one': 'openid-one',
+    'account-two': 'openid-two',
+  })
 })

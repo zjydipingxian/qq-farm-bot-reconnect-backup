@@ -36,6 +36,7 @@ const DEFAULT_OFFLINE_REMINDER: OfflineReminder = {
     offlineDeleteSec: 0,
     autoReconnectEnabled: false,
     reconnectAccountId: '',
+    reconnectOpenids: {},
     reconnectDelaySec: 60,
     reconnectCodeEndpoint: 'http://211.154.25.123:28999/api/open/v1/farm/code',
     reconnectApiToken: '',
