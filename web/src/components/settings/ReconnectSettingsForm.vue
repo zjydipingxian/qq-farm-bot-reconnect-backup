@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import type { Account } from '@/stores/account'
 import type { OfflineConfig } from '@/stores/setting'
 import { computed } from 'vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSwitch from '@/components/ui/BaseSwitch.vue'
+import { buildReconnectAccountOptions } from '@/utils/reconnect-account-options'
 
-const props = defineProps<{ accounts: { id: string, name: string }[] }>()
+const props = defineProps<{ accounts: Account[] }>()
 const model = defineModel<OfflineConfig>({ required: true })
-const accountOptions = computed(() => props.accounts.map(account => ({ label: account.name, value: String(account.id) })))
+const accountOptions = computed(() => buildReconnectAccountOptions(props.accounts))
 function update<K extends keyof OfflineConfig>(key: K, value: OfflineConfig[K]) {
   model.value = { ...model.value, [key]: value }
 }
